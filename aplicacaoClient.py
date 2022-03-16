@@ -118,9 +118,9 @@ def main():
         hand = 0
         arquivoPrincipal = 1
         print("Enviando Handshake")
-        handshake = handshake()
+        handshake1 = handhsake()
         eopInicio = eopMake()
-        primeiro = handshake + eopInicio
+        primeiro = handshake1 + eopInicio
 
         if com1.enable() == True:
             print("Comunicação Aberta")
