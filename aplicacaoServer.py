@@ -72,9 +72,84 @@ import time
 # se estiver usando windows, o gerenciador de dispositivos informa a porta
 
 #use uma das 3 opcoes para atribuir à variável a porta usada
-serialName = "/dev/ttyACM1"           # Ubuntu (variacao de)
+serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-#serialName = "ACM0"                  # Windows(variacao de)
+#serialName = "ACM0"  
+#                 # Windows(variacao de)
+def transformaInt(data):
+    entireData = bytearray()
+    for i in data:
+        new_data_byte = (i).to_bytes(1, byteorder ='big')
+        entireData.append(new_data_byte[0])
+    return entireData
+
+def handhsake():
+    hand = [0, 0, 0, 255, 0, 255, 0, 0, 0]
+    handshake = transformInt(hand))
+    return handshake
+
+
+def makeHead(arquivo, tipo_mensagem):
+    """
+    b0 = tipo de mensagem
+    b1 = tamanho do arquivo
+    b2 = Total de pacotes
+    b3 = numero do payload atual
+    b4 = tamanho do payload atual
+    b5 = byte eop
+    """
+    heads = []
+    tamanhoBytes = len(arquivo)
+    print(f"O arquivo tem {tamanhoBytes} bytes" )
+    i = 0
+    qtdPayloads = math.ceil(tamanhoBytes/114)
+    print(f"Quantidade de Pacotes: {qtdPayloads}")
+    eop = [b"\xFF",b"\xFF",b"\xFF",b"\xFF"]
+    x = 0
+    while( i < qtdPayloads):
+        if tamanhoBytes - (114*i) < 114:
+            x = tamanhoBytes - (114*i)
+        else: 
+            x = 114
+        heads.append([tipo_mensagem.to_bytes(1, 'big'), tamanhoBytes.to_bytes(2, 'big'), qtdPayloads.to_bytes(1, 'big') ,i.to_bytes(1, 'big'),x.to_bytes(1, 'big'),eop])
+        i += 1
+    return heads
+
+
+def makePayload(arquivo, heads):
+    tamanhoBytes = len(arquivo)
+    x = 0
+    payloads = []
+    contador = 0
+    while x < len(heads):
+        payload = []
+        i = 0
+        while i < int.from_bytes(heads[x][4], byteorder="big"):
+            payload.append(arquivo[i])
+            i += 1
+        contador += (i - 1)
+        payloads.append(payload)
+        x += 1
+    return payloads
+
+def makeDatagrama(arquivo, tipo):
+    datagramas = []
+    heads = makeHead(arquivo, tipo)
+    payloads = makePayload(arquivo, heads)
+    eop = [b"\xFF",b"\xFF",b"\xFF",b"\xFF"]
+    i = 0
+    #j = 0 
+    while i < len(heads):
+        datagrama = []
+        datagrama.append(heads[i])
+        datagrama.append(payloads[i])
+        datagrama.append(eop)
+        datagramas.append(datagrama)
+        i+=1
+        """    while j < len(datagramas):
+        print(f"\n\nDatagrama {j}:",datagramas[j])
+        j +=1"""
+    return datagramas
 
 
 def main():
@@ -83,9 +158,6 @@ def main():
         #para declarar esse objeto é o nome da porta.
         com1 = enlace(serialName)
         start_time = time.time()
-        comandos = []
-        i = 0
-
 
         """ Lembrar de enviar comando por comando"""
 
@@ -94,10 +166,10 @@ def main():
         if com1.enable() == True:
             print("Comunicação Aberta")
         #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
-        tamComando, nRx = com1.getData(2)
-        print("Tamanho do Comando", tamComando) 
+        tamComando, nRx = com1.getData(10)
+        print(tamComando) 
         intc = int.from_bytes(tamComando, byteorder="big")
-        print("Client enviou ", intc/2)
+        print(intc)
         com1.sendData(tamComando)
         print(f"Resposta enviada: {tamComando}")
             

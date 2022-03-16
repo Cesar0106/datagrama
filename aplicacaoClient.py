@@ -27,6 +27,17 @@ import math
 serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 #serialName = "ACM0"                  # Windows(variacao de)
+def transformaInt(data):
+    entireData = bytearray()
+    for i in data:
+        new_data_byte = (i).to_bytes(1, byteorder ='big')
+        entireData.append(new_data_byte[0])
+    return entireData
+
+def handhsake():
+    hand = [0, 0, 0, 255, 0, 255, 0, 0, 0]
+    handshake = transformaInt(hand)
+    return handshake
 
 def makeHead(arquivo, tipo_mensagem):
     """
@@ -36,28 +47,40 @@ def makeHead(arquivo, tipo_mensagem):
     b3 = numero do payload atual
     b4 = tamanho do payload atual
     """
-    heads = []
     tamanhoBytes = len(arquivo)
     print(f"O arquivo tem {tamanhoBytes} bytes" )
     i = 0
     qtdPayloads = math.ceil(tamanhoBytes/114)
     print(f"Quantidade de Pacotes: {qtdPayloads}")
+    last_payload_size = len(tamanhoBytes) - 114 * (qtdPayloads-1)
+    
+
     x = 0
     while( i < qtdPayloads):
         if tamanhoBytes - (114*i) < 114:
             x = int(tamanhoBytes - (114*i))
         else: 
             x = 114
-        heads.append(tipo_mensagem.to_bytes(2, 'big'))
-        heads.append(tamanhoBytes.to_bytes(2, 'big'))
-        heads.append(qtdPayloads.to_bytes(2, 'big'))
-        heads.append(i.to_bytes(2, 'big'))
-        heads.append(x.to_bytes(2, 'big'))
-        print(heads)
         i += 1
+    
+    heads = [tamanhoBytes, qtdPayloads,last_payload_size,0,0,0,0,0,0,0]
+
     return heads
     
+def data(arquivo):
+    data_a = transformaInt(arquivo)
+    return arquivo
 
+def pacote(head,payload,eop):
+    pacote = head + payload + eop
+    return pacote
+
+eop = [0,255,0,0]
+
+def eopMake():
+    EOP = transformaInt(eop)
+    return EOP
+"""
 def makePayload(arquivo, tipo):
     tamanhoBytes = len(arquivo)
     x = 0
@@ -81,36 +104,36 @@ def makePayload(arquivo, tipo):
         payloads.append(payload)
         x += 1
     return payloads
+"""
 
 def main():
     try:
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
-        hand = 0
-        arquivoPrincipal = 1
-        arquivoHandshake = [b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00"]
-        print("Enviando Handshake")
-        handshake = (makePayload(arquivoHandshake, hand))
-        print(handshake)
         com1 = enlace(serialName)
         start_time = time.time()
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
         com1.enable()
+        hand = 0
+        arquivoPrincipal = 1
+        print("Enviando Handshake")
+        handshake = handshake()
+        eopInicio = eopMake()
+        primeiro = handshake + eopInicio
+
         if com1.enable() == True:
             print("Comunicação Aberta")
+        com1.sendData(primeiro)
         #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
         #Criando e enviando Handshake
         #Tipos:
-        print("len",len(handshake))
-        com1.sendData(np.asarray(handshake))
-        print("Esperando Confirmação")
         inicio = time.time()
         tempo = False
         while com1.rx.getIsEmpty():
                 if time.time() - inicio >= 5:
                     resposta = str(input("Servidor inativo, deseja tentar novamente? S/N : "))
                     if resposta.upper() == "S":
-                        com1.sendData(np.asarray(handshake))
+                        com1.sendData(primeiro)
                         inicio = time.time()
                         pass
                     else:
@@ -120,43 +143,35 @@ def main():
                         com1.disable()
                         print("--- {:.4f} seconds ---".format(time.time() - start_time))
                         exit()
-        print("Tamanho do Comando", tamComando) 
-        tamanhoRecebido = int.from_bytes(tamComando, byteorder="big")
-        print("tamanhoRecebido: " , tamanhoRecebido/2)
+        confirmacaoHead, confirmacaoLen = com1.getNData(10)
+        check = com1.rx.getNData(7)
+        confirmacaoEop, lenEop = com1.getNdata(4)
+        checkServer = check.encode()
         #aqui você deverá gerar os dados a serem transmitidos. 
         #seus dados a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
-        print(txBuffer)
-        tamanhoLista= (len(txBuffer))
-        print("Enviando Tamanho da lista")
-        print("A lista tem {0} bytes".format(tamanhoLista.to_bytes(2, 'big')))
-        com1.sendData(tamanhoLista.to_bytes(2, 'big'))
-        print("Tamanho da lista enviado")
 
-        print("Esperando Confirmação")
-        tamComando, nRx = com1.getData(2)
-        print("Tamanho do Comando", tamComando) 
-        tamanhoRecebido = int.from_bytes(tamComando, byteorder="big")
-        print("tamanhoRecebido: " , tamanhoRecebido/2)
+        if checkServer == 'tudo ok':
+            print("----------------")
+            print("Confirmacao: ", checkServer)
+        else: 
+            print("FALHA EM HANDSHAKE")
+            quit()
         
-        
-        if tamanhoLista == tamanhoRecebido:
-            time.sleep(0.1)
-            print("Tamanho Correto Recebido:")
-            print("Transmitindo Lista")
-            i = 0
-            while i < (tamanhoLista):
-                com1.sendData(np.asarray(txBuffer[i]))
-                time.sleep(0.2)
-                com1.sendData(np.asarray(txBuffer[i+1]))
-                print(f"Enviado {txBuffer[i+1]}" )
-                print(f"Comando: {int((i+1)/2)+1}")
-                time.sleep(0.2)
-                i += 2
-        else:
-            print('Tamanho Errado')
-            print("Lista não enviada :(  ")
-        print(comandofinal)
+        imageR = "./imgs/image.png"
+        imageW = "./imgs/recebidaCopia.png"
+
+
+        print("Carregando imagem para transmissão")
+        print(".{}".format(imageR))
+        print("---------------------------")
+        with open("./imgs/image.png", "rb") as image:
+            txBuffer = image.read()
+        dado = np.asarray(txBuffer)
+
+        headDado = makeHead(dado)
+        headDadoArray = data(headDado)
+        eopa = eopMake()
         #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
 
             
