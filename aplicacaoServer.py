@@ -76,6 +76,23 @@ serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 #serialName = "ACM0"  
 #                 # Windows(variacao de)
+from ctypes import sizeof
+from http.cookiejar import MozillaCookieJar
+from enlace import *
+import numpy as np
+import time
+import random
+import math
+
+# voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
+#   para saber a sua porta, execute no terminal :
+#   python -m serial.tools.list_ports
+# se estiver usando windows, o gerenciador de dispositivos informa a porta
+
+#use uma das 3 opcoes para atribuir à variável a porta usada
+serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
+#serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
+#serialName = "ACM0"                  # Windows(variacao de)
 def transformaInt(data):
     entireData = bytearray()
     for i in data:
@@ -85,9 +102,8 @@ def transformaInt(data):
 
 def handhsake():
     hand = [0, 0, 0, 255, 0, 255, 0, 0, 0]
-    handshake = transformInt(hand))
+    handshake = transformaInt(hand)
     return handshake
-
 
 def makeHead(arquivo, tipo_mensagem):
     """
@@ -96,61 +112,41 @@ def makeHead(arquivo, tipo_mensagem):
     b2 = Total de pacotes
     b3 = numero do payload atual
     b4 = tamanho do payload atual
-    b5 = byte eop
     """
-    heads = []
     tamanhoBytes = len(arquivo)
     print(f"O arquivo tem {tamanhoBytes} bytes" )
     i = 0
     qtdPayloads = math.ceil(tamanhoBytes/114)
     print(f"Quantidade de Pacotes: {qtdPayloads}")
-    eop = [b"\xFF",b"\xFF",b"\xFF",b"\xFF"]
+    last_payload_size = len(tamanhoBytes) - 114 * (qtdPayloads-1)
+    package_number = 0
+
+
     x = 0
     while( i < qtdPayloads):
         if tamanhoBytes - (114*i) < 114:
-            x = tamanhoBytes - (114*i)
+            x = int(tamanhoBytes - (114*i))
         else: 
             x = 114
-        heads.append([tipo_mensagem.to_bytes(1, 'big'), tamanhoBytes.to_bytes(2, 'big'), qtdPayloads.to_bytes(1, 'big') ,i.to_bytes(1, 'big'),x.to_bytes(1, 'big'),eop])
         i += 1
+    
+    heads = [tamanhoBytes, package_number, qtdPayloads,last_payload_size,0,0,0,0,0,0,0]
+
     return heads
+    
+def data(arquivo):
+    data_a = transformaInt(arquivo)
+    return arquivo
 
+def pacote(head,payload,eop):
+    pacote = head + payload + eop
+    return pacote
 
-def makePayload(arquivo, heads):
-    tamanhoBytes = len(arquivo)
-    x = 0
-    payloads = []
-    contador = 0
-    while x < len(heads):
-        payload = []
-        i = 0
-        while i < int.from_bytes(heads[x][4], byteorder="big"):
-            payload.append(arquivo[i])
-            i += 1
-        contador += (i - 1)
-        payloads.append(payload)
-        x += 1
-    return payloads
+eop = [0,255,0,0]
 
-def makeDatagrama(arquivo, tipo):
-    datagramas = []
-    heads = makeHead(arquivo, tipo)
-    payloads = makePayload(arquivo, heads)
-    eop = [b"\xFF",b"\xFF",b"\xFF",b"\xFF"]
-    i = 0
-    #j = 0 
-    while i < len(heads):
-        datagrama = []
-        datagrama.append(heads[i])
-        datagrama.append(payloads[i])
-        datagrama.append(eop)
-        datagramas.append(datagrama)
-        i+=1
-        """    while j < len(datagramas):
-        print(f"\n\nDatagrama {j}:",datagramas[j])
-        j +=1"""
-    return datagramas
-
+def eopMake():
+    EOP = transformaInt(eop)
+    return EOP
 
 def main():
     try:
@@ -158,7 +154,7 @@ def main():
         #para declarar esse objeto é o nome da porta.
         com1 = enlace(serialName)
         start_time = time.time()
-
+        loop: True
         """ Lembrar de enviar comando por comando"""
 
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
@@ -166,43 +162,48 @@ def main():
         if com1.enable() == True:
             print("Comunicação Aberta")
         #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
-        tamComando, nRx = com1.getData(10)
-        print(tamComando) 
-        intc = int.from_bytes(tamComando, byteorder="big")
-        print(intc)
-        com1.sendData(tamComando)
-        print(f"Resposta enviada: {tamComando}")
-            
+        while com1.rx.getIsEmpty():
+            print("------------")
+            print("Esperando.....")
+            time.sleep(0.2)
+        clientHandhsake, lenHandshake = com1.getData(14)
+        print("-------")
+        print("resposta cliente recebida")
+        time.sleep(0.2)
+
+        handshake = handshake()
+        eopInicio = eopMake()
+        primeiro = handshake + eopInicio
+
+        if clientHandhsake == primeiro:
+            handshake = "tudo ok"
+            handshake_bytes = str.encode(handshake)
+            respostaServer = handshake + handshake_bytes + eopInicio
+            com1.sendData(respostaServer)
+
+        else: 
+            erro = "--erro--"
+            handshake_bytes = str.encode(handshake)
+            respostaServer = handshake + erro + eopInicio
+            com1.sendData(respostaServer)
+
         #finalmente vamos transmitir os tados. Para isso usamos a funçao sendData que é um método da camada enlace.
         #faça um print para avisar que a transmissão vai começar.
         #tente entender como o método send funciona!
         #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
 
-        #acesso aos bytes recebidos
-        while i < intc/2:
-            comandoSize, nRx = com1.getData(2)
-            time.sleep(0.2)
-            comandInt = int.from_bytes(comandoSize, byteorder="big")
-            rxBuffer, nRx = com1.getData(comandInt)
-            print(rxBuffer)
-            comandos.append(rxBuffer)
-            i += 1
+        
+        while loop:
+            head, lenHead = com1.getNData(10)
             
-        print("recebeu {}" .format(comandos))
-        devolvendo = len(comandos)
-        print(f"Devolvendo tamanho da lista de {devolvendo}")
-        com1.sendData(devolvendo.to_bytes(2, 'big'))
-        print("Tamanho da lista enviado")
 
 
 
         # Encerra comunicação
-        print("-------------------------")
         print("Comunicação encerrada")
         print("-------------------------")
         com1.disable()
         print("--- {:.4f} seconds ---".format(time.time() - start_time))
-
     except Exception as erro:
         print("ops! :-\\")
         print(erro)

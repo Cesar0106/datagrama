@@ -53,7 +53,8 @@ def makeHead(arquivo, tipo_mensagem):
     qtdPayloads = math.ceil(tamanhoBytes/114)
     print(f"Quantidade de Pacotes: {qtdPayloads}")
     last_payload_size = len(tamanhoBytes) - 114 * (qtdPayloads-1)
-    
+    package_number = 0
+
 
     x = 0
     while( i < qtdPayloads):
@@ -63,7 +64,7 @@ def makeHead(arquivo, tipo_mensagem):
             x = 114
         i += 1
     
-    heads = [tamanhoBytes, qtdPayloads,last_payload_size,0,0,0,0,0,0,0]
+    heads = [tamanhoBytes, package_number, qtdPayloads,last_payload_size,0,0,0,0,0,0,0]
 
     return heads
     
@@ -172,8 +173,27 @@ def main():
         headDado = makeHead(dado)
         headDadoArray = data(headDado)
         eopa = eopMake()
-        #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
 
+        for i in range(0, headDadoArray[2]):
+            payload = dado[:114]
+            del dado[:114]
+
+            headDado[0] = len(payload)
+
+            print("-------------------------")
+            print("número do pacote: {}".format(headDado[1]))
+            print("tamanho do payload atual: {}".format(headDado[0]))
+            time.sleep(1)
+            
+            headDado[1] += 1
+            headDadoArray = data(headDado)
+            mensagem = pacote(headDadoArray, payload, eopa)
+
+            com1.sendData(mensagem)
+
+            print("-----------------")
+            print("Pacote enviado: ", len(mensagem))
+            print("-----------------")
             
         #finalmente vamos transmitir os tados. Para isso usamos a funçao sendData que é um método da camada enlace.
         #faça um print para avisar que a transmissão vai começar.
