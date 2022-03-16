@@ -195,6 +195,13 @@ def main():
         
         while loop:
             head, lenHead = com1.getNData(10)
+            print("......")
+            print("head recebido")
+            entire_head = [x for x in head]
+            payload, lenPayload = com1.getData(entire_head[0])
+            arquivo += payload
+            time.sleep(0.3)
+            eop, lenEOP = com1.getNData(4)
             
 
 
