@@ -72,7 +72,6 @@ import time
 # se estiver usando windows, o gerenciador de dispositivos informa a porta
 
 #use uma das 3 opcoes para atribuir à variável a porta usada
-serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 #serialName = "ACM0"  
 #                 # Windows(variacao de)
@@ -90,7 +89,7 @@ import math
 # se estiver usando windows, o gerenciador de dispositivos informa a porta
 
 #use uma das 3 opcoes para atribuir à variável a porta usada
-serialName = "/dev/ttyACM1"           # Ubuntu (variacao de)
+serialName = "/dev/ttyACM0"          # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 #serialName = "ACM0"                  # Windows(variacao de)
 def transformaInt(data):
@@ -130,7 +129,7 @@ def makeHead(arquivo, tipo_mensagem):
             x = 114
         i += 1
     
-    heads = [tamanhoBytes, package_number, qtdPayloads,last_payload_size,0,0,0,0,0,0,0]
+    heads = [tamanhoBytes, package_number, qtdPayloads,last_payload_size,0,0,0,0,0,0]
 
     return heads
     
@@ -166,7 +165,8 @@ def main():
             print("------------")
             print("Esperando.....")
             time.sleep(0.2)
-        clientHandhsake, lenHandshake = com1.getData(14)
+        clientHandhsake, lenHandshake = com1.getData(13)
+        print(clientHandhsake)
         print("-------")
         print("resposta cliente recebida")
         time.sleep(0.2)

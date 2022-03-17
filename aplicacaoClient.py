@@ -52,17 +52,11 @@ def makeHead(arquivo, tipo_mensagem):
     i = 0
     qtdPayloads = math.ceil(tamanhoBytes/114)
     print(f"Quantidade de Pacotes: {qtdPayloads}")
-    last_payload_size = len(tamanhoBytes) - 114 * (qtdPayloads-1)
+    #last_payload_size = len(tamanhoBytes) - 114 * (qtdPayloads-1)
+    last_payload_size = 0
     package_number = 0
 
 
-    x = 0
-    while( i < qtdPayloads):
-        if tamanhoBytes - (114*i) < 114:
-            x = int(tamanhoBytes - (114*i))
-        else: 
-            x = 114
-        i += 1
     
     heads = [tamanhoBytes, package_number, qtdPayloads,last_payload_size,0,0,0,0,0,0,0]
 
@@ -115,13 +109,13 @@ def main():
         start_time = time.time()
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
         com1.enable()
-        hand = 0
+        hand = [0, 0, 0, 255, 0, 255, 0, 0, 0]
+
         arquivoPrincipal = 1
         print("Enviando Handshake")
         handshake1 = handhsake()
         eopInicio = eopMake()
         primeiro = handshake1 + eopInicio
-
         if com1.enable() == True:
             print("Comunicação Aberta")
         com1.sendData(primeiro)
@@ -129,7 +123,9 @@ def main():
         #Criando e enviando Handshake
         #Tipos:
         inicio = time.time()
+        print("------------------------------")
         tempo = False
+
         while com1.rx.getIsEmpty():
                 if time.time() - inicio >= 5:
                     resposta = str(input("Servidor inativo, deseja tentar novamente? S/N : "))
@@ -140,6 +136,7 @@ def main():
                     else:
                         print("-------------------------")
                         print("Comunicação encerrada")
+                        
                         print("-------------------------")
                         com1.disable()
                         print("--- {:.4f} seconds ---".format(time.time() - start_time))
