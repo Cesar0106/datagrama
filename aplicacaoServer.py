@@ -176,15 +176,15 @@ def main():
         primeiro = handshakeLoop + eopInicio
 
         if clientHandhsake == primeiro:
-            handshake = "tudo ok"
-            handshake_bytes = str.encode(handshake)
+            handshakea = "tudo ok"
+            handshake_bytes = str.encode(handshakea)
             respostaServer = handshakeLoop + handshake_bytes + eopInicio
             com1.sendData(respostaServer)
 
         else: 
             erro = "--erro--"
-            handshake_bytes = str.encode(handshake)
-            respostaServer = handshake + erro + eopInicio
+            handshake_bytes = str.encode(erro)
+            respostaServer = handshakeLoop + erro + eopInicio
             com1.sendData(respostaServer)
 
         #finalmente vamos transmitir os tados. Para isso usamos a funçao sendData que é um método da camada enlace.
