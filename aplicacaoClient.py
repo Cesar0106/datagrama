@@ -11,7 +11,6 @@
 
 
 from ctypes import sizeof
-from http.cookiejar import MozillaCookieJar
 from enlace import *
 import numpy as np
 import time
@@ -27,79 +26,48 @@ import math
 serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 #serialName = "ACM0"                  # Windows(variacao de)
-def transformaInt(data):
+def int_1_byte(data):
     entireData = bytearray()
     for i in data:
-        new_data_byte = (i).to_bytes(1, byteorder ='big')
-        entireData.append(new_data_byte[0])
+        intByte = (i).to_bytes(1, byteorder ='big')
+        entireData.append(intByte[0])
     return entireData
 
 def handhsake():
-    hand = [0, 0, 0, 255, 0, 255, 0, 0, 0]
-    handshake = transformaInt(hand)
+    hand = [0, 0, 0, 255, 0, 255, 0, 0, 0, 0]
+    handshake = int_1_byte(hand)
     return handshake
 
-def makeHead(arquivo, tipo_mensagem):
-    """
-    b0 = tipo de mensagem
-    b1 = tamanho do arquivo
-    b2 = Total de pacotes
-    b3 = numero do payload atual
-    b4 = tamanho do payload atual
-    """
+def makeHead(arquivo, tipo):
+    """Se tipo = 0 é handshake se tipo != 0 é parte do arquivo"""
     tamanhoBytes = len(arquivo)
     print(f"O arquivo tem {tamanhoBytes} bytes" )
-    i = 0
     qtdPayloads = math.ceil(tamanhoBytes/114)
     print(f"Quantidade de Pacotes: {qtdPayloads}")
-    #last_payload_size = len(tamanhoBytes) - 114 * (qtdPayloads-1)
-    last_payload_size = 0
-    package_number = 0
+    tamUltimoPacote = tamanhoBytes - 114*(qtdPayloads-1)
+    print(f"Tamanho do último pacote: {tamUltimoPacote}")
+    pacoteAtual = 0
 
+<<<<<<< HEAD
+    heads = [0, tamanhoBytes, qtdPayloads, tamUltimoPacote,pacoteAtual,0, 0, 255, 0, 0]
+=======
 
     
     heads = [tamanhoBytes, package_number, qtdPayloads,last_payload_size,0,0,0,0,0,0]
+>>>>>>> d70430db2c3eeaa58021739984b1ccb7a2d57be2
 
     return heads
     
-def data(arquivo):
-    data_a = transformaInt(arquivo)
-    return arquivo
 
-def pacote(head,payload,eop):
+def makePacote(head,payload,eop):
     pacote = head + payload + eop
     return pacote
 
 eop = [0,255,0,0]
 
 def eopMake():
-    EOP = transformaInt(eop)
+    EOP = int_1_byte(eop)
     return EOP
-"""
-def makePayload(arquivo, tipo):
-    tamanhoBytes = len(arquivo)
-    x = 0
-    payloads = []
-    contador = 0
-    eop = b"\xFF"b"\xFF"b"\xFF"b"\xFF"
-    heads = makeHead(arquivo, tipo)
-
-    while x < len(heads[3]):
-        payload = []
-        i = 0
-        z = 0
-        while z <= 4:
-            payload.append(heads[z+(x*4)])
-            z +=1
-        while i < int.from_bytes(heads[4], byteorder="big"):
-            payload.append(arquivo[i])
-            i += 1
-        payload.append(eop)
-        contador += (i - 1)
-        payloads.append(payload)
-        x += 1
-    return payloads
-"""
 
 def main():
     try:
@@ -137,82 +105,65 @@ def main():
                     else:
                         print("-------------------------")
                         print("Comunicação encerrada")
-                        
                         print("-------------------------")
                         com1.disable()
                         print("--- {:.4f} seconds ---".format(time.time() - start_time))
                         exit()
-        confirmacaoHead, confirmacaoLen = com1.getNData(10)
-        check = com1.rx.getNData(7)
-        confirmacaoEop, lenEop = com1.getNdata(4)
-        checkServer = check.encode()
-        #aqui você deverá gerar os dados a serem transmitidos. 
-        #seus dados a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
-        #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
+        print("Confirmação Recbida")
+        headHandshake, lenteste = com1.getData(10)
+        print(headHandshake)
+        payloadHandshake, lenteste  = com1.getData(4)
+        print(payloadHandshake)
+        eopHandshake, lenteste = com1.getData(4)
+        print(eopHandshake)
+        print("Handshake recebido: ", (headHandshake+payloadHandshake+eopHandshake))
+        #aqui você deverá gerar os imagemBytess a serem transmitidos. 
+        #seus imagemBytess a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
+        #nome de txBuffer. Esla sempre irá armazenar os imagemBytess a serem enviados.
 
-        if checkServer == 'tudo ok':
+        if  payloadHandshake == b'\x00\x00\xff\xff':
             print("----------------")
-            print("Confirmacao: ", checkServer)
+            print("Confirmado")
         else: 
             print("FALHA EM HANDSHAKE")
             quit()
         
         imageR = "./imgs/image.png"
-        imageW = "./imgs/recebidaCopia.png"
-
 
         print("Carregando imagem para transmissão")
         print(".{}".format(imageR))
         print("---------------------------")
-        with open("./imgs/image.png", "rb") as image:
-            txBuffer = image.read()
-        dado = np.asarray(txBuffer)
-
-        headDado = makeHead(dado)
-        headDadoArray = data(headDado)
+        imagem = bytearray(open("./imgs/image.png", "rb").read())
+        print("Imagem Transformada em bytes")
+        headInt = makeHead(imagem,1)
+        print(headInt)
         eopa = eopMake()
-
-        for i in range(0, headDadoArray[2]):
-            payload = dado[:114]
-            del dado[:114]
-
-            headDado[0] = len(payload)
+        time.sleep(2)
+        for i in range(0, headInt[2]):
+            payload = imagem[:114]
+            del imagem[:114]
+            print("Payload feito")
+            headInt[1] = len(payload)
 
             print("-------------------------")
-            print("número do pacote: {}".format(headDado[1]))
-            print("tamanho do payload atual: {}".format(headDado[0]))
-            time.sleep(1)
-            
-            headDado[1] += 1
-            headDadoArray = data(headDado)
-            mensagem = pacote(headDadoArray, payload, eopa)
-
-            com1.sendData(mensagem)
+            print("número do pacote: {}".format(headInt[4]))
+            time.sleep(0.5)
+            if headInt[2] == headInt[4]+1:
+                headInt[5] = headInt[3]
+            else:
+                headInt[5] = 114
+            headByte = int_1_byte(headInt)
+            print(headInt)
+            headInt[4] += 1
+            print(headByte)
+            pacote = makePacote(headByte, payload, eopa)
+            print(pacote)
+            com1.sendData(pacote)
 
             print("-----------------")
-            print("Pacote enviado: ", len(mensagem))
+            print("Pacote enviado: ", len(pacote))
             print("-----------------")
             
-        #finalmente vamos transmitir os tados. Para isso usamos a funçao sendData que é um método da camada enlace.
-        #faça um print para avisar que a transmissão vai começar.
-        #tente entender como o método send funciona!
-        #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
-
-
-        # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
-        # Tente entender como esse método funciona e o que ele retorna
-
-
-        #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
-        #Observe o que faz a rotina dentro do thread RX
-        #print um aviso de que a recepção vai começar.
-        
-        #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
-        #Veja o que faz a funcao do enlaceRX  getBufferLen
-      
-        #acesso aos bytes recebidos
-
-        # Encerra comunicação
         print("-------------------------")
         print("Comunicação encerrada")
         print("-------------------------")
