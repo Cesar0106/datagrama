@@ -28,7 +28,7 @@ serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 #serialName = "ACM0"                  # Windows(variacao de)
 
-def makeHead(arquivo, tipo_mensagem):
+def makeHead(arquivo):
     """
     b0 = tipo de mensagem
     b1 = tamanho do arquivo
@@ -59,19 +59,37 @@ def makeHead(arquivo, tipo_mensagem):
     
 
 def makePayload(arquivo, tipo):
+    heads = []
     tamanhoBytes = len(arquivo)
+    print(f"O arquivo tem {tamanhoBytes} bytes" )
+    i = 0
+    qtdPayloads = math.ceil(tamanhoBytes/114)
+    print(f"Quantidade de Pacotes: {qtdPayloads}")
+    x = 0
+    while( i < qtdPayloads):
+        if tamanhoBytes - (114*i) < 114:
+            x = int(tamanhoBytes - (114*i))
+        else: 
+            x = 114
+        heads.append(tipo.to_bytes(2, 'big'))
+        heads.append(tamanhoBytes.to_bytes(2, 'big'))
+        heads.append(qtdPayloads.to_bytes(2, 'big'))
+        heads.append(i.to_bytes(2, 'big'))
+        heads.append(x.to_bytes(2, 'big'))
+        print(heads)
+        i += 1
     x = 0
     payloads = []
     contador = 0
     eop = b"\xFF"b"\xFF"b"\xFF"b"\xFF"
-    heads = makeHead(arquivo, tipo)
 
     while x < len(heads[3]):
         payload = []
         i = 0
         z = 0
         while z <= 4:
-            payload.append(heads[z+(x*4)])
+            print(heads[z+(x*4)+1])
+            payload.append(heads[z+(x*4)+1])
             z +=1
         while i < int.from_bytes(heads[4], byteorder="big"):
             payload.append(arquivo[i])
@@ -88,10 +106,11 @@ def main():
         #para declarar esse objeto é o nome da porta.
         hand = 0
         arquivoPrincipal = 1
-        arquivoHandshake = [b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00"]
+        arquivoHandshake = [b"\x00",b"\x00",b"\x00",b"\x00"]
         print("Enviando Handshake")
         handshake = (makePayload(arquivoHandshake, hand))
-        print(handshake)
+        print(handshake[0],"\n")
+        print(handshake[1])
         com1 = enlace(serialName)
         start_time = time.time()
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
