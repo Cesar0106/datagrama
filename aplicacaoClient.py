@@ -58,7 +58,7 @@ def makeHead(arquivo, tipo_mensagem):
 
 
     
-    heads = [tamanhoBytes, package_number, qtdPayloads,last_payload_size,0,0,0,0,0,0,0]
+    heads = [tamanhoBytes, package_number, qtdPayloads,last_payload_size,0,0,0,0,0,0]
 
     return heads
     
@@ -124,6 +124,7 @@ def main():
         #Tipos:
         inicio = time.time()
         print("------------------------------")
+        print("asdijasidasj")
         tempo = False
 
         while com1.rx.getIsEmpty():

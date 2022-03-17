@@ -129,7 +129,7 @@ def makeHead(arquivo, tipo_mensagem):
             x = 114
         i += 1
     
-    heads = [tamanhoBytes, package_number, qtdPayloads,last_payload_size,0,0,0,0,0,0]
+    heads = [tamanhoBytes, package_number, qtdPayloads,last_payload_size,0,0,0,0,0]
 
     return heads
     
