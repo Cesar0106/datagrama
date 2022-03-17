@@ -28,74 +28,33 @@ serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 #serialName = "ACM0"                  # Windows(variacao de)
 
-def makeHead(arquivo):
-    """
-    b0 = tipo de mensagem
-    b1 = tamanho do arquivo
-    b2 = Total de pacotes
-    b3 = numero do payload atual
-    b4 = tamanho do payload atual
-    """
-    heads = []
-    tamanhoBytes = len(arquivo)
-    print(f"O arquivo tem {tamanhoBytes} bytes" )
-    i = 0
-    qtdPayloads = math.ceil(tamanhoBytes/114)
-    print(f"Quantidade de Pacotes: {qtdPayloads}")
-    x = 0
-    while( i < qtdPayloads):
-        if tamanhoBytes - (114*i) < 114:
-            x = int(tamanhoBytes - (114*i))
-        else: 
-            x = 114
-        heads.append(tipo_mensagem.to_bytes(2, 'big'))
-        heads.append(tamanhoBytes.to_bytes(2, 'big'))
-        heads.append(qtdPayloads.to_bytes(2, 'big'))
-        heads.append(i.to_bytes(2, 'big'))
-        heads.append(x.to_bytes(2, 'big'))
-        print(heads)
-        i += 1
-    return heads
-    
-
 def makePayload(arquivo, tipo):
-    heads = []
     tamanhoBytes = len(arquivo)
     print(f"O arquivo tem {tamanhoBytes} bytes" )
-    i = 0
     qtdPayloads = math.ceil(tamanhoBytes/114)
     print(f"Quantidade de Pacotes: {qtdPayloads}")
-    x = 0
-    while( i < qtdPayloads):
-        if tamanhoBytes - (114*i) < 114:
-            x = int(tamanhoBytes - (114*i))
-        else: 
-            x = 114
-        heads.append(tipo.to_bytes(2, 'big'))
-        heads.append(tamanhoBytes.to_bytes(2, 'big'))
-        heads.append(qtdPayloads.to_bytes(2, 'big'))
-        heads.append(i.to_bytes(2, 'big'))
-        heads.append(x.to_bytes(2, 'big'))
-        print(heads)
-        i += 1
+    eop = b"\xFF"b"\xFF"b"\xFF"b"\xFF"
     x = 0
     payloads = []
-    contador = 0
-    eop = b"\xFF"b"\xFF"b"\xFF"b"\xFF"
-
-    while x < len(heads[3]):
+    while x < (qtdPayloads):
         payload = []
-        i = 0
-        z = 0
-        while z <= 4:
-            print(heads[z+(x*4)+1])
-            payload.append(heads[z+(x*4)+1])
-            z +=1
-        while i < int.from_bytes(heads[4], byteorder="big"):
-            payload.append(arquivo[i])
-            i += 1
+        payload.append(tipo.to_bytes(2, 'big'))
+        payload.append(tamanhoBytes.to_bytes(2, 'big'))
+        payload.append(qtdPayloads.to_bytes(2, 'big'))
+        payload.append(x.to_bytes(2, 'big'))
+        if x == qtdPayloads:
+            payload.append((len(arquivo[:])).to_bytes(2, 'big'))
+        elif x == 0:
+            payload.append((len(arquivo[:113])).to_bytes(2, 'big'))
+        else:
+            payload.append((len(arquivo[x*114:(x+1)*(114-1)])).to_bytes(2, 'big'))
+        if x == qtdPayloads:
+            payload.append(arquivo[:])
+        elif x == 0:
+            payload.append(arquivo[:113])
+        else:
+            payload.append(arquivo[x*114:(x+1)*(114-1)])
         payload.append(eop)
-        contador += (i - 1)
         payloads.append(payload)
         x += 1
     return payloads
@@ -105,12 +64,10 @@ def main():
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
         hand = 0
-        arquivoPrincipal = 1
-        arquivoHandshake = [b"\x00",b"\x00",b"\x00",b"\x00"]
+        arquivoHandshake = [b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00",b"\x00"]
         print("Enviando Handshake")
         handshake = (makePayload(arquivoHandshake, hand))
-        print(handshake[0],"\n")
-        print(handshake[1])
+        print("Pacote Handshake: ", handshake)
         com1 = enlace(serialName)
         start_time = time.time()
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
