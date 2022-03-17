@@ -171,14 +171,14 @@ def main():
         print("resposta cliente recebida")
         time.sleep(0.2)
 
-        handshake = handshake()
+        handshakeLoop = handshake()
         eopInicio = eopMake()
-        primeiro = handshake + eopInicio
+        primeiro = handshakeLoop + eopInicio
 
         if clientHandhsake == primeiro:
             handshake = "tudo ok"
             handshake_bytes = str.encode(handshake)
-            respostaServer = handshake + handshake_bytes + eopInicio
+            respostaServer = handshakeLoop + handshake_bytes + eopInicio
             com1.sendData(respostaServer)
 
         else: 
